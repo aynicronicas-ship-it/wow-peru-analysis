@@ -1,41 +1,79 @@
 # Análisis pendiente
 
-La fase de **frontend/panel web** ya está suficientemente cubierta para diseñar una primera arquitectura de AYNI. Lo que falta se concentra en las capas que el navegador no revela por sí solo.
+La fase de **frontend/panel web** y el **análisis estático del launcher** ya están suficientemente cubiertos para diseñar una primera arquitectura completa de AYNI.
 
-## Prioridad 1 — Launcher
+## Completado — Launcher estático
 
-Es la pieza más importante que falta.
+Con `app-update.yml` y `app.asar` ya se confirmó:
 
-Queremos documentar, sin copiar código propietario:
+- Electron + React;
+- estructura renderer/preload/main;
+- auto-update con `electron-updater`;
+- feed de updates;
+- manifests de instalación, reparación y HD;
+- servidor de descargas;
+- SHA-256 de archivos y SHA-512 para paquetes de auto-update;
+- escaneo, reparación y backups;
+- descarga concurrente, reanudable y segmentada;
+- pausa/reanudación/cancelación;
+- selección de cliente existente;
+- ruta administrada del cliente;
+- configuración automática de realmlist/WTF;
+- limpieza de cache antes de jugar;
+- lanzamiento de `Wow.exe` sin argumentos;
+- gestión de addons;
+- diagnóstico local;
+- controles de seguridad de Electron.
 
-- tecnología/framework del launcher;
-- proceso de instalación;
-- estructura de archivos;
-- mecanismo de autoactualización;
-- servidor/CDN de descargas;
-- manifiestos de versión;
-- hashes/verificación de integridad;
-- reparación de archivos;
-- configuración de ruta del juego;
-- cómo inicia el ejecutable del juego;
-- argumentos de lanzamiento;
-- manejo de errores;
-- almacenamiento de configuración;
-- firma digital del ejecutable/instalador.
+Ver `06-launcher-static-analysis.md`.
 
-Artefactos útiles: instalador/launcher descargado legítimamente desde la cuenta de prueba y, si existe, archivos de configuración/manifiesto distribuidos con él.
+## Prioridad 1 — Manifests reales vigentes
 
-## Prioridad 2 — Tráfico normal y autorizado del panel
+El ASAR revela las URLs y el contrato esperado, pero no incluye necesariamente una copia actual de los manifests de producción.
 
-Un HAR **saneado** del navegador permitiría confirmar:
+Todavía sería útil obtener de forma legítima y de solo lectura:
 
-- respuestas reales de `/api/player-panel`;
-- formato de `/api/session/me`;
-- cabeceras HTTP y caché;
-- códigos de estado;
-- cookies utilizadas;
-- tiempos de respuesta;
-- payloads normales de acciones que el usuario esté autorizado a ejecutar.
+- `manifest-full.json`;
+- `repair-manifest.json`;
+- `manifest-hd.json`;
+- `addons.json`;
+- metadata actual del auto-updater.
+
+Eso permitiría confirmar tamaños actuales, número de archivos, agrupación real, nombres de paquetes y si existe/firma válida de manifests.
+
+No necesitamos descargar todos los archivos del cliente para esto.
+
+## Prioridad 2 — Cliente instalado / diferencias reales
+
+Si queremos cerrar el flujo launcher → juego, basta con inspeccionar una instalación legítima del cliente, no copiarla completa al repositorio.
+
+Interesa documentar:
+
+- árbol de primer nivel;
+- `Data/` y parches personalizados;
+- `Interface/AddOns` gestionado;
+- `WTF/Config.wtf` y `realmlist.wtf` saneados;
+- presencia/ausencia de archivos HD opcionales;
+- qué archivos cambia el launcher tras reparar o instalar HD.
+
+No es necesario subir los ~16 GB del juego.
+
+## Prioridad 3 — Comportamiento de red durante una instalación pequeña
+
+Una captura autorizada y saneada del launcher podría confirmar:
+
+- uso real de HTTP Range;
+- número de conexiones simultáneas;
+- reanudación después de pausa;
+- comportamiento ante hash fallido/retry;
+- cabeceras CDN;
+- cache-control y redirects.
+
+Esto es opcional: el código distribuido ya permite diseñar nuestro propio motor de descargas.
+
+## Prioridad 4 — Tráfico normal y autorizado del panel web
+
+Un HAR **saneado** permitiría confirmar respuestas reales de `/api/player-panel`, `/api/session/me` y acciones normales de usuario.
 
 Antes de compartir un HAR deben eliminarse:
 
@@ -49,59 +87,40 @@ Antes de compartir un HAR deben eliminarse:
 
 No necesitamos probar endpoints administrativos con una cuenta sin permisos ni intentar saltar autorización.
 
-## Prioridad 3 — Contrato backend observable
+## Prioridad 5 — Backend y servidor de juego
 
-A partir de respuestas legítimas podemos inferir estructuras de datos, pero todavía no sabemos:
+El frontend y launcher no demuestran:
 
-- framework/backend usado;
+- framework del backend;
 - base de datos;
-- cómo se integra con el servidor del juego;
-- colas/jobs para entrega de items;
-- transacciones de wallet;
-- estrategia de locking/concurrencia;
+- integración interna con Auth/World server;
+- colas/jobs de entrega de items;
+- locking/concurrencia de wallet;
 - validación backend de roles;
 - almacenamiento de comprobantes;
-- sistema de email.
+- sistema de correo;
+- arquitectura interna del servidor de juego.
 
-Estas piezas solo deben documentarse si aparecen en material distribuido públicamente o facilitado con autorización.
+Estas piezas solo deben documentarse si aparecen en material público o material facilitado con autorización.
 
-## Prioridad 4 — Flujo launcher ↔ juego ↔ servidor
+## Qué ya NO hace falta investigar para comenzar AYNI
 
-Queremos conocer a nivel de arquitectura:
+No necesitamos conocer el código fuente privado de WoW Perú, su base de datos ni descargar todo su cliente para avanzar.
 
-1. cómo obtiene versiones el launcher;
-2. cómo descarga/parchea;
-3. cómo valida archivos;
-4. cómo configura el cliente;
-5. cómo lanza el juego;
-6. qué endpoint/host de login utiliza el cliente;
-7. qué ocurre cuando hay mantenimiento o versión incompatible.
-
-Para AYNI, este bloque se traducirá después a nuestro propio `Release Service + CDN + Launcher + Game Gateway`.
-
-## Prioridad 5 — Observabilidad y operación
-
-Si el launcher o la web exponen material suficiente, revisar:
-
-- logs de actualización;
-- crash reporting;
-- telemetría;
-- status del reino;
-- mantenimiento programado;
-- rollback/versiones;
-- soporte y diagnóstico del cliente.
-
-## Qué NO falta para empezar AYNI
-
-No necesitamos conocer el código fuente privado de WoW Perú ni su base de datos para avanzar. Con la fase web ya podemos definir para AYNI:
+Ya tenemos suficiente evidencia para definir en AYNI:
 
 - portal de cuenta;
-- modelo de sesión;
 - panel del jugador;
-- servicios de personaje;
-- wallet/tienda;
-- historial y auditoría;
-- roles de staff;
-- interfaz de descarga.
+- modelo de servicios y wallet;
+- launcher separado;
+- Release Service;
+- manifests firmados;
+- CDN;
+- instalación/reparación;
+- auto-update;
+- integridad de archivos;
+- workshop/addons;
+- handoff seguro launcher → juego;
+- observabilidad y diagnósticos.
 
-El próximo análisis con mayor retorno es el **launcher**, no seguir profundizando indefinidamente en el HTML.
+El siguiente análisis con mayor retorno, si queremos seguir estudiando WoW Perú, es **obtener los manifests vigentes o inspeccionar una instalación real del cliente**, no seguir desensamblando el launcher indefinidamente.

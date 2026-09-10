@@ -1,40 +1,70 @@
 # WoW Perú — análisis técnico de referencia para AYNI
 
-Este repositorio documenta un análisis **de caja negra y de frontend** del ecosistema web/launcher de WoW Perú, usando únicamente material accesible desde el navegador y archivos suministrados para una cuenta de prueba autorizada.
+Este repositorio documenta un análisis **de caja negra, frontend y launcher distribuido** del ecosistema WoW Perú, usando material accesible desde el navegador y archivos suministrados para una cuenta de prueba autorizada.
 
-El objetivo no es copiar código, contenido, assets ni diseño propietario. El objetivo es entender patrones de arquitectura, flujos de cuenta, integración web↔API↔juego, launcher, operaciones de tienda y herramientas administrativas que puedan inspirar una implementación **propia y original** para AYNI.
+El objetivo no es copiar código, contenido, assets ni diseño propietario. El objetivo es entender patrones de arquitectura y traducirlos a una implementación **propia y original** para AYNI.
 
 ## Estado
 
-**Fase 1 — Panel web: completada.**
+- **Fase 1 — Panel web: completada.**
+- **Fase 2 — Análisis estático del launcher: completada.**
+- **Fase 3 — Manifests/cliente real: opcional y pendiente si queremos profundizar.**
 
-Se analizaron estas capturas de frontend:
+Material estudiado:
 
 - `wow-peru-panel.html.html`
 - `scripts.js.descarga`
 - `redesign.js.descarga`
 - `perucoins-ingame.js.descarga`
+- `app-update.yml`
+- `app.asar`
 
-No se almacenaron credenciales, cookies, tokens de sesión ni tokens de Cloudflare en este repositorio.
+No se almacenan en este repositorio credenciales, cookies, tokens de sesión, tokens Turnstile ni copias del código/ASAR propietario.
 
 ## Hallazgos principales
 
-- El sitio funciona como HTML multipágina con comportamiento de aplicación en el panel mediante JavaScript/jQuery.
-- El frontend consume una API same-origin bajo `/api`.
-- El cliente principal conserva un token de sesión en `localStorage`, lo adjunta como `X-Wowperu-Session` y además usa credenciales same-origin.
-- El panel se hidrata desde `/api/player-panel` y se refresca periódicamente, además de refrescar al volver el foco/visibilidad.
-- El panel integra cuenta, personajes, tiempo jugado, recompensas, tienda, Perúcoins, donaciones, referidos, foro, soporte y descarga del launcher.
-- Hay funciones de staff/GM presentes en el mismo frontend, pero su visibilidad depende del rol devuelto por el servidor. La seguridad real debe verificarse del lado backend; ocultar UI no equivale a autorización.
-- La capa `redesign.js` es de mejora progresiva: animaciones, carruseles, accesibilidad y microinteracciones sin cambiar la API.
-- `perucoins-ingame.js` es una herramienta administrativa separada para consulta de saldos/personajes/visuales y ajustes controlados.
+### Panel web
+
+- API same-origin bajo `/api`.
+- Sesión de panel manejada desde el frontend con token y verificación de `/session/me`.
+- Panel de cuenta, personajes, tiempo jugado, recompensas, tienda, Perúcoins, donaciones, referidos, foro, soporte y descarga.
+- Funciones GM presentes en frontend pero condicionadas por permisos devueltos por servidor.
+
+### Launcher
+
+- Electron + React.
+- Versión analizada del launcher: `1.0.143`.
+- `electron-updater` `6.8.9`.
+- Ruta administrada del cliente: `C:\ProgramData\WoW Peru\Client`.
+- Descargas desde `https://download.wow-peru.lat`.
+- Manifests separados para instalación completa, reparación y HD.
+- Verificación SHA-256 de archivos descargados.
+- Auto-update exige SHA-512 de paquete.
+- Descargas concurrentes, reanudables y segmentadas para archivos grandes.
+- Reparación con política de rutas permitidas y backups `.wowperu.bak`.
+- Gestión segura de ZIP/addons.
+- Configuración automática de realmlist/WTF.
+- Lanzamiento de `Wow.exe` sin argumentos adicionales.
+- Renderer Electron aislado mediante preload/IPC, sandbox y `nodeIntegration: false`.
 
 ## Documentos
 
-- [`docs/01-arquitectura-panel-web.md`](docs/01-arquitectura-panel-web.md) — arquitectura y flujo del panel.
-- [`docs/02-superficie-api.md`](docs/02-superficie-api.md) — inventario funcional de endpoints observables en frontend.
-- [`docs/03-lecciones-para-ayni.md`](docs/03-lecciones-para-ayni.md) — qué conviene adoptar, mejorar o evitar en AYNI.
-- [`docs/04-analisis-pendiente.md`](docs/04-analisis-pendiente.md) — lo que todavía falta estudiar para completar el panorama.
+- [`docs/01-arquitectura-panel-web.md`](docs/01-arquitectura-panel-web.md)
+- [`docs/02-superficie-api.md`](docs/02-superficie-api.md)
+- [`docs/03-lecciones-para-ayni.md`](docs/03-lecciones-para-ayni.md)
+- [`docs/04-analisis-pendiente.md`](docs/04-analisis-pendiente.md)
+- [`docs/05-launcher-update-config.md`](docs/05-launcher-update-config.md)
+- [`docs/06-launcher-static-analysis.md`](docs/06-launcher-static-analysis.md)
+- [`docs/07-blueprint-launcher-ayni.md`](docs/07-blueprint-launcher-ayni.md)
+
+## Resultado para AYNI
+
+Ya existe suficiente información para diseñar nuestro propio flujo:
+
+`Portal/Auth → Release Service → CDN → AYNI Launcher → cliente Godot → Game Gateway`
+
+El launcher de AYNI debe usar manifests firmados, verificación de integridad, reparación incremental, auto-update separado del juego, handoff de sesión efímero y workshop/mods aislados.
 
 ## Alcance y límites
 
-Este análisis **no demuestra** cómo está implementado el backend, la base de datos, el servidor de juego, la autorización real de roles ni la lógica interna del launcher. Esas partes requieren artefactos adicionales o captura de tráfico autorizada y saneada.
+Este análisis no demuestra la implementación privada del backend, base de datos ni servidor de juego de WoW Perú. Tampoco necesitamos conocerlos para construir AYNI.

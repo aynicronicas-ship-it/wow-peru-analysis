@@ -8,7 +8,8 @@ El objetivo no es copiar código, contenido, assets ni diseño propietario. El o
 
 - **Fase 1 — Panel web: completada.**
 - **Fase 2 — Análisis estático del launcher: completada.**
-- **Fase 3 — Manifests/cliente real: opcional y pendiente si queremos profundizar.**
+- **Fase 3 — Manifest completo del cliente: completada.**
+- **Fase 4 — Comparación repair/HD/addons: pendiente y opcional.**
 
 Material estudiado:
 
@@ -18,6 +19,7 @@ Material estudiado:
 - `perucoins-ingame.js.descarga`
 - `app-update.yml`
 - `app.asar`
+- `manifest-full.json` (contenido suministrado como captura de texto)
 
 No se almacenan en este repositorio credenciales, cookies, tokens de sesión, tokens Turnstile ni copias del código/ASAR propietario.
 
@@ -47,6 +49,16 @@ No se almacenan en este repositorio credenciales, cookies, tokens de sesión, to
 - Lanzamiento de `Wow.exe` sin argumentos adicionales.
 - Renderer Electron aislado mediante preload/IPC, sandbox y `nodeIntegration: false`.
 
+### Manifest completo
+
+- 217 archivos activos y 3 rutas retiradas.
+- Tamaño declarado: ~17.426 GB / **16.229 GiB**, coherente con los `16.2 GB` mostrados en la UI.
+- ~99.1% del peso está en `Data/`; `Interface/` representa ~0.75%.
+- 24 archivos MPQ contienen prácticamente todo el volumen del cliente.
+- Cada artefacto declara `path`, `size`, `sha256` y `url`, habilitando descarga y verificación por archivo.
+- Existe un mecanismo explícito de `retiredFiles` para eliminar contenido sustituido.
+- Hay personalización observable como `Data/patch-Z-WOWPERU.MPQ` y `Interface/AddOns/WowPeruVisualShop/`.
+
 ## Documentos
 
 - [`docs/01-arquitectura-panel-web.md`](docs/01-arquitectura-panel-web.md)
@@ -56,6 +68,7 @@ No se almacenan en este repositorio credenciales, cookies, tokens de sesión, to
 - [`docs/05-launcher-update-config.md`](docs/05-launcher-update-config.md)
 - [`docs/06-launcher-static-analysis.md`](docs/06-launcher-static-analysis.md)
 - [`docs/07-blueprint-launcher-ayni.md`](docs/07-blueprint-launcher-ayni.md)
+- [`docs/08-manifest-full-analysis.md`](docs/08-manifest-full-analysis.md)
 
 ## Resultado para AYNI
 
